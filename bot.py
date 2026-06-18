@@ -1,11 +1,3 @@
-"""
-VPN Config Renamer — Telegram Bot
-Supported: vmess, vless, trojan, shadowsocks (ss), socks, wireguard,
-           Clash YAML, sing-box JSON, base64 subscriptions, mixed files.
-
-ONLY the display/remark name field is ever modified.
-No server, port, UUID, key, or security field is touched.
-"""
 
 from __future__ import annotations
 
@@ -33,11 +25,7 @@ from telegram.ext import (
     filters,
 )
 import config
-# NOTE: do NOT pick the random name here at module load time — that would
-# pick ONE name for the entire lifetime of the bot process and reuse it for
-# every single request/user. Instead, config.get_random_name() is called
-# fresh inside each request-handling function below, so every incoming
-# message/file gets its own independently randomized name.
+
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT)
 logger = logging.getLogger("renamer_bot")
@@ -65,7 +53,6 @@ class RenameStatus(str, Enum):
 
 @dataclass
 class RenameResult:
-    """Holds the output of renaming a single config."""
     original:    str
     renamed:     str
     protocol:    Protocol         = Protocol.UNKNOWN
@@ -86,17 +73,17 @@ def _safe_b64decode(s: str) -> bytes:
 
 
 def _b64encode(data: bytes) -> str:
-    """Standard (non-URL-safe) base64 encode, no newlines."""
+
     return base64.b64encode(data).decode("ascii")
 
 
 def _e(text) -> str:
-    """Escape special characters for Telegram MarkdownV2."""
+
     return re.sub(r"([_*\[\]()~`>#+\-=|{}.!\\])", r"\\\1", str(text))
 
 
 def _url_encode_name(name: str) -> str:
-    """Percent-encode a remark so it is safe inside a URI fragment."""
+
     return urllib.parse.quote(name, safe="")
 
 
