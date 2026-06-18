@@ -34,7 +34,7 @@ from telegram.ext import (
 )
 
 import config
-
+# م
 # NOTE: do NOT pick the random name here at module load time — that would
 # pick ONE name for the entire lifetime of the bot process and reuse it for
 # every single request/user. Instead, config.get_random_name() is called
