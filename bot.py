@@ -834,7 +834,13 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 # ── Telegram message handlers ─────────────────────────────────────────────────
+async def handle_config(update, context):
+    new_name = config.get_random_name()
 
+    # همین new_name در تمام عملیات همین request استفاده میشه
+    result = process_config(new_name)
+
+    await update.message.reply_text(result)
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (update.message.text or "").strip()
     if not text:
@@ -958,7 +964,7 @@ async def handle_channel_post(
 
 async def main() -> None:
     builder = Application.builder().token(config.TELEGRAM_BOT_TOKEN)
-    NEW_NAME = config.get_random_name()
+    
     app = builder.build()
     app.add_handler(
     MessageHandler(
