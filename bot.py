@@ -32,7 +32,6 @@ from telegram.ext import (
     MessageHandler,
     filters,
 )
-
 import config
 # NOTE: do NOT pick the random name here at module load time — that would
 # pick ONE name for the entire lifetime of the bot process and reuse it for
@@ -42,10 +41,7 @@ import config
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT)
 logger = logging.getLogger("renamer_bot")
-
-
 # ── Enums ─────────────────────────────────────────────────────────────────────
-
 class Protocol(str, Enum):
     VMESS      = "VMess"
     VLESS      = "VLESS"
