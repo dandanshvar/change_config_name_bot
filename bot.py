@@ -35,7 +35,11 @@ from telegram.ext import (
 
 import config
 
-
+# NOTE: do NOT pick the random name here at module load time — that would
+# pick ONE name for the entire lifetime of the bot process and reuse it for
+# every single request/user. Instead, config.get_random_name() is called
+# fresh inside each request-handling function below, so every incoming
+# message/file gets its own independently randomized name.
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT)
 logger = logging.getLogger("renamer_bot")
@@ -700,6 +704,11 @@ async def _process_text(
 ) -> None:
     """Rename configs found in *text* and reply to the user."""
     user_id = message.from_user.id
+    # Pick a fresh random name for THIS request only. Each new
+    # message/file from any user gets its own independent random
+    # choice, and that single choice is reused consistently for every
+    # config found within this one request/response.
+    new_name = config.get_random_name()
 
     if not _rate_limiter.is_allowed(user_id):
         await message.reply_text(
@@ -716,7 +725,7 @@ async def _process_text(
     status_msg = await message.reply_text("✏️ Renaming configs… please wait.")
 
     try:
-        renamed_text, results = rename_configs(text, NEW_NAME)
+        renamed_text, results = rename_configs(text, new_name)
 
         if not results:
             await status_msg.edit_text(
@@ -726,7 +735,7 @@ async def _process_text(
             )
             return
 
-        report = build_report(results, NEW_NAME)
+        report = build_report(results, new_name)
 
         # ── Reply strategy ────────────────────────────────────────────────────
         # If the input came from a file, return a file.
@@ -769,7 +778,7 @@ async def _process_text(
     except Exception as exc:
         logger.exception("Unexpected error during processing: %s", exc)
         try:
-            plain = _build_plain_report(results, NEW_NAME)  # noqa: F821
+            plain = _build_plain_report(results, new_name)  # noqa: F821
             await status_msg.edit_text(plain)
         except Exception:
             await status_msg.edit_text(
@@ -789,6 +798,7 @@ def _renamed_filename(original: str) -> str:
 
 async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
+    sample_name = config.get_random_name()
     await update.message.reply_text(
         f"👋 Hello, {user.first_name}!\n\n"
         "I rename VPN configuration display names — nothing else.\n\n"
@@ -798,14 +808,15 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "• A WireGuard INI block\n"
         "• A Clash YAML or sing-box JSON config\n"
         "• A base64 subscription blob\n\n"
-        f"I'll rename every display name to *{NEW_NAME}* and return "
-        "the modified configs with a summary.\n\n"
+        f"I'll rename every display name to a random name like *{sample_name}* "
+        "and return the modified configs with a summary.\n\n"
         "Use /help for details.",
         parse_mode=ParseMode.MARKDOWN,
     )
 
 
 async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    sample_name = config.get_random_name()
     await update.message.reply_text(
         "ℹ️ *Config Renamer Help*\n\n"
         "*What I do:*\n"
@@ -824,23 +835,17 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         "• Mixed files with any combination of the above\n\n"
         "*How to use:*\n"
         "1. Paste a config link or upload a file.\n"
-        "2. I rename every display name to the configured value.\n"
+        "2. I rename every display name to a freshly chosen random value.\n"
         "3. You get the renamed config(s) back instantly.\n\n"
         f"*Limits:* up to {config.MAX_CONFIGS_PER_MSG} configs per message, "
         f"{config.RATE_LIMIT_REQUESTS} requests per {int(config.RATE_LIMIT_WINDOW)}s.\n\n"
-        f"Current rename target: `{NEW_NAME}`",
+        f"Example rename target: `{sample_name}`",
         parse_mode=ParseMode.MARKDOWN,
     )
 
 
 # ── Telegram message handlers ─────────────────────────────────────────────────
-async def handle_config(update, context):
-    new_name = config.get_random_name()
 
-    # همین new_name در تمام عملیات همین request استفاده میشه
-    result = process_config(new_name)
-
-    await update.message.reply_text(result)
 async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     text = (update.message.text or "").strip()
     if not text:
@@ -935,10 +940,12 @@ async def handle_channel_post(
     if not text:
         return
 
+    # هر پست کانال یک نام رندوم مستقل و تازه می‌گیرد (نه یک مقدار ثابت سراسری)
+    new_name = config.get_random_name()
 
     renamed_text, results = rename_configs(
         text,
-        NEW_NAME
+        new_name
     )
 
 
@@ -964,7 +971,7 @@ async def handle_channel_post(
 
 async def main() -> None:
     builder = Application.builder().token(config.TELEGRAM_BOT_TOKEN)
-    
+
     app = builder.build()
     app.add_handler(
     MessageHandler(
@@ -979,8 +986,9 @@ async def main() -> None:
     app.add_handler(MessageHandler(filters.ALL, handle_unknown))
 
     logger.info(
-        "Config Renamer Bot starting — rename target: %r",
-        NEW_NAME
+        "Config Renamer Bot starting — each request gets its own random "
+        "name from %r",
+        config.LIST_NAMES
     )
 
     await app.initialize()
