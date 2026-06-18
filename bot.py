@@ -35,7 +35,7 @@ from telegram.ext import (
 
 import config
 
-NEW_NAME = config.get_random_name()
+
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(level=config.LOG_LEVEL, format=config.LOG_FORMAT)
 logger = logging.getLogger("renamer_bot")
@@ -958,7 +958,7 @@ async def handle_channel_post(
 
 async def main() -> None:
     builder = Application.builder().token(config.TELEGRAM_BOT_TOKEN)
-
+    NEW_NAME = config.get_random_name()
     app = builder.build()
     app.add_handler(
     MessageHandler(
