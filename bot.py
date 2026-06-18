@@ -939,7 +939,7 @@ async def handle_channel_post(
     # ارسال خروجی
     caption_text = """
     
-    @zdlinkid 👙
+    @zlinkid 👙
     """
 
     message_text = f"`{renamed_text}`\n\n{caption_text}"
