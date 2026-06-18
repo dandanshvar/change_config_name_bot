@@ -1,6 +1,6 @@
-
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import json
@@ -628,6 +628,144 @@ def _build_plain_report(results: list[RenameResult], new_name: str) -> str:
     return "\n".join(lines)
 
 
+# ── VPN connectivity / latency check (used for the dest-channel report) ──────
+
+_TESTABLE_PROTOCOLS = {
+    Protocol.VMESS, Protocol.VLESS, Protocol.TROJAN, Protocol.SS, Protocol.SOCKS,
+}
+
+
+def _e_code(text) -> str:
+    """Escape text for use inside a MarkdownV2 code span — only backslash
+    and backtick are reserved there, unlike in plain text."""
+    return str(text).replace("\\", "\\\\").replace("`", "\\`")
+
+
+def _extract_host_port(renamed_uri: str, protocol: Protocol) -> Optional[tuple[str, int]]:
+    """Best-effort (host, port) extraction for connectivity testing only —
+    never used to alter the config itself."""
+    try:
+        if protocol == Protocol.VMESS:
+            payload = _safe_b64decode(renamed_uri[len("vmess://"):])
+            data = json.loads(payload)
+            host = str(data.get("add") or data.get("address") or "").strip()
+            port = int(data.get("port") or 0)
+            return (host, port) if host and port else None
+
+        if protocol in (Protocol.VLESS, Protocol.TROJAN, Protocol.SS, Protocol.SOCKS):
+            parsed = urllib.parse.urlsplit(renamed_uri)
+            host = parsed.hostname
+            port = parsed.port
+            return (host, port) if host and port else None
+    except Exception as exc:
+        logger.debug("Host/port extraction failed: %s", exc)
+    return None
+
+
+async def _tcp_health_check(host: str, port: int, timeout: float = 5.0) -> tuple[bool, Optional[float]]:
+    """Open a raw TCP connection to (host, port) and measure latency in ms.
+    Returns (is_healthy, latency_ms); latency_ms is None on failure."""
+    start  = time.perf_counter()
+    writer = None
+    try:
+        reader, writer = await asyncio.wait_for(
+            asyncio.open_connection(host, port), timeout=timeout
+        )
+        return True, (time.perf_counter() - start) * 1000
+    except Exception as exc:
+        logger.debug("Health check failed for %s:%s — %s", host, port, exc)
+        return False, None
+    finally:
+        if writer is not None:
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except Exception:
+                pass
+
+
+async def build_vpn_check_report(results: list[RenameResult]) -> str:
+    """Test connectivity/latency for every renamed config individually and
+    build a MarkdownV2 report, e.g.:
+
+        📊 VPN Check Report — 1 config tested
+        ✅ Healthy (1)
+        1. ✅ VLESS — @Zlinkid 🇩🇪
+        🌐 `host:port`
+        ⚡️ 114.7 ms
+        🤖 `full config uri`
+        Tested at 16:53:38 UTC
+
+    Returns "" if nothing in *results* is a testable protocol.
+    """
+    candidates = [
+        r for r in results
+        if r.status == RenameStatus.OK and r.protocol in _TESTABLE_PROTOCOLS
+    ]
+    if not candidates:
+        return ""
+
+    async def _check(r: RenameResult):
+        hp = _extract_host_port(r.renamed, r.protocol)
+        if hp is None:
+            return r, None, None, False
+        host, port = hp
+        healthy, latency = await _tcp_health_check(host, port)
+        return r, (host, port), latency, healthy
+
+    checked = await asyncio.gather(*[_check(r) for r in candidates])
+
+    healthy_blocks: list[str]   = []
+    unhealthy_blocks: list[str] = []
+
+    for idx, (r, hostport, latency, healthy) in enumerate(checked, start=1):
+        host_disp   = f"{hostport[0]}:{hostport[1]}" if hostport else "unknown"
+        status_icon = "✅" if healthy else "❌"
+        block = (
+            f"{idx}\\. {status_icon} {_e(r.protocol.value)} — {_e(r.new_name)}\n"
+            f"🌐 `{_e_code(host_disp)}`\n"
+            + (f"⚡️ {latency:.1f} ms\n" if healthy else "⚠️ Unreachable\n")
+            + f"🤖 `{_e_code(r.renamed)}`"
+        )
+        (healthy_blocks if healthy else unhealthy_blocks).append(block)
+
+    total = len(checked)
+    parts = [f"📊 *VPN Check Report* — {total} config{'s' if total != 1 else ''} tested\n"]
+
+    if healthy_blocks:
+        parts.append(f"✅ *Healthy \\({len(healthy_blocks)}\\)*")
+        parts.extend(healthy_blocks)
+        parts.append("")
+
+    if unhealthy_blocks:
+        parts.append(f"❌ *Unhealthy \\({len(unhealthy_blocks)}\\)*")
+        parts.extend(unhealthy_blocks)
+        parts.append("")
+
+    parts.append(f"Tested at {_e(time.strftime('%H:%M:%S UTC', time.gmtime()))}")
+    return "\n".join(parts)
+
+
+def _chunk_report(report: str, limit: int = 3900) -> list[str]:
+    """Split a long report into Telegram-safe chunks, breaking only between
+    config blocks (never mid-entry)."""
+    if len(report) <= limit:
+        return [report]
+
+    chunks: list[str] = []
+    current = ""
+    for block in report.split("\n\n"):
+        candidate = f"{current}\n\n{block}" if current else block
+        if len(candidate) > limit and current:
+            chunks.append(current)
+            current = block
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    return chunks
+
+
 # ── Rate limiter ──────────────────────────────────────────────────────────────
 
 class RateLimiter:
@@ -930,25 +1068,26 @@ async def handle_channel_post(
         new_name
     )
 
-
     # اگر چیزی تغییر نکرد
     if not results:
         return
 
+    # تست سلامت/تاخیر هر کانفیگ به‌صورت مجزا و ساخت گزارش نهایی
+    report = await build_vpn_check_report(results)
 
-    # ارسال خروجی
-    caption_text = """
-    
-    @zdlinkid 👙
-    """
+    if not report:
+        # هیچ کانفیگ قابل تست (vmess/vless/trojan/ss/socks) در این پیام نبود
+        return
 
-    message_text = f"`{renamed_text}`\n\n{caption_text}"
-
-    await context.bot.send_message(
-        chat_id=config.DEST_CHANNEL_ID,
-        text=message_text,
-        parse_mode="Markdown"
-    )
+    for chunk in _chunk_report(report):
+        try:
+            await context.bot.send_message(
+                chat_id=config.DEST_CHANNEL_ID,
+                text=chunk,
+                parse_mode=ParseMode.MARKDOWN_V2,
+            )
+        except Exception as exc:
+            logger.exception("Failed to send VPN check report chunk: %s", exc)
 # ── Entry point ───────────────────────────────────────────────────────────────
 
 async def main() -> None:
@@ -988,5 +1127,4 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
