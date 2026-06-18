@@ -5,7 +5,8 @@ import logging
 from dotenv import load_dotenv
 
 load_dotenv()
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+# TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 LIST_NAMES = [
     "@Zlinkid 🫦",
     "@Zlinkid 🇺🇸",
@@ -32,8 +33,10 @@ PROXY_URL = os.getenv("PROXY_URL")
 LOG_LEVEL = logging.INFO
 LOG_FORMAT = "%(asctime)s  %(levelname)-8s  %(name)s — %(message)s"
 
-SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID"))
-DEST_CHANNEL_ID = int(os.getenv("DEST_CHANNEL_ID"))
+SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID", "0").strip())
+DEST_CHANNEL_ID = int(os.getenv("DEST_CHANNEL_ID", "0").strip())
+# SOURCE_CHANNEL_ID = int(os.getenv("SOURCE_CHANNEL_ID"))
+# DEST_CHANNEL_ID = int(os.getenv("DEST_CHANNEL_ID"))
 
 # TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 # PROXY_URL = os.getenv("PROXY_URL", "").strip() if os.getenv("PROXY_URL") else None
