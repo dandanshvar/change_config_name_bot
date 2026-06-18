@@ -7,7 +7,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-# u00
 LIST_NAMES = [
     "@Zlinkid 🫦",
     "@Zlinkid 🇺🇸",
