@@ -489,8 +489,8 @@ def rename_configs(text: str, new_name: str) -> tuple[str, list[RenameResult]]:
                 final_lines.append(r.renamed + ending)
                 continue
 
-        # No match — keep verbatim.
-        final_lines.append(line)
+
+        
 
     # If nothing was recognised at all, try the generic unknown renamer.
     if not results:
@@ -498,6 +498,7 @@ def rename_configs(text: str, new_name: str) -> tuple[str, list[RenameResult]]:
         results.append(r)
         return r.renamed, results
 
+ 
     return "".join(final_lines), results
 
 
@@ -782,17 +783,7 @@ async def cmd_start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = update.effective_user
     sample_name = config.get_random_name()
     await update.message.reply_text(
-        f"👋 Hello, {user.first_name}!\n\n"
-        "I rename VPN configuration display names — nothing else.\n\n"
-        "📤 *Send me:*\n"
-        "• One or more config links (vmess/vless/trojan/ss/socks)\n"
-        "• A file (.txt/.conf/.yaml/.yml/.json/.ini/.cfg)\n"
-        "• A WireGuard INI block\n"
-        "• A Clash YAML or sing-box JSON config\n"
-        "• A base64 subscription blob\n\n"
-        f"I'll rename every display name to a random name like *{sample_name}* "
-        "and return the modified configs with a summary.\n\n"
-        "Use /help for details.",
+        f"👋 Hello, {user.first_name}!\n\n" ,
         parse_mode=ParseMode.MARKDOWN,
     )
 
@@ -801,27 +792,7 @@ async def cmd_help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     sample_name = config.get_random_name()
     await update.message.reply_text(
         "ℹ️ *Config Renamer Help*\n\n"
-        "*What I do:*\n"
-        "I change only the display / remark name of VPN configs.\n"
-        "I never touch servers, ports, UUIDs, keys, or any security field.\n\n"
-        "*Supported formats:*\n"
-        "• `vmess://…` — renames `ps`\n"
-        "• `vless://…` — renames `#fragment`\n"
-        "• `trojan://…` — renames `#fragment`\n"
-        "• `ss://…` (Shadowsocks) — renames `#fragment`\n"
-        "• `socks://…` / `socks5://…` — renames `#fragment`\n"
-        "• WireGuard INI — renames `ProfileName` / `DisplayName`\n"
-        "• Clash YAML — renames `name` fields in proxies\n"
-        "• sing-box JSON — renames `tag` fields in outbounds\n"
-        "• Base64 subscription blobs (decoded & re-encoded)\n"
-        "• Mixed files with any combination of the above\n\n"
-        "*How to use:*\n"
-        "1. Paste a config link or upload a file.\n"
-        "2. I rename every display name to a freshly chosen random value.\n"
-        "3. You get the renamed config(s) back instantly.\n\n"
-        f"*Limits:* up to {config.MAX_CONFIGS_PER_MSG} configs per message, "
-        f"{config.RATE_LIMIT_REQUESTS} requests per {int(config.RATE_LIMIT_WINDOW)}s.\n\n"
-        f"Example rename target: `{sample_name}`",
+        "*What I do: *\n",
         parse_mode=ParseMode.MARKDOWN,
     )
 
@@ -928,21 +899,16 @@ async def handle_channel_post(
     renamed_text, results = rename_configs(
         text,
         new_name
-    )
+    ) 
 
 
-    # اگر چیزی تغییر نکرد
     if not results:
         return
 
-
-    # ارسال خروجی
     caption_text = """
 
-    
     @zlinkid   |   @FreeConfigZlinkbot
     """
-
     message_text = f"{renamed_text}\n\n{caption_text}"
 
     await context.bot.send_message(
