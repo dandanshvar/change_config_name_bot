@@ -939,14 +939,10 @@ async def handle_channel_post(
     # ارسال خروجی
     caption_text = """
     
-<<<<<<< HEAD
-    @zlinkid 👙
-=======
     @zlinkid   |   @FreeConfigZlinkbot
->>>>>>> 3aa2fd0 (cahnge name upgrade to mci)
     """
 
-    message_text = f"`{renamed_text}`\n\n{caption_text}"
+    message_text = f"{renamed_text}\n\n{caption_text}"
 
     await context.bot.send_message(
         chat_id=config.DEST_CHANNEL_ID,
