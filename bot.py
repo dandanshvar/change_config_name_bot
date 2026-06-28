@@ -945,7 +945,7 @@ async def main() -> None:
     await app.updater.start_polling(
         allowed_updates=Update.ALL_TYPES
     )
-
+    # eeeee
     try:
         await asyncio.Event().wait()
     finally:
