@@ -13,6 +13,14 @@ LIST_NAMES = [
     "@Zlinkid 🇨🇦",
     "@Zlinkid 🇩🇪",
     "@Zlinkid 🇫🇷",
+    "@Zlinkid 🇫🇮",
+    "@Zlinkid 🇳🇱",
+    '@Zlinkid 🇺🇸_MCI_iranc ',
+    '@Zlinkid 🇨🇦_MCI_iranc ',
+    '@Zlinkid 🇩🇪_MCI_iranc ',
+    '@Zlinkid 🇫🇷_MCI_iranc ',
+    '@Zlinkid 🇫🇮_MCI_iranc',
+    '@Zlinkid 🇳🇱_MCI_iranc ',
 ]
 
 def get_random_name():

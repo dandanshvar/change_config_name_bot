@@ -939,7 +939,11 @@ async def handle_channel_post(
     # ارسال خروجی
     caption_text = """
     
+<<<<<<< HEAD
     @zlinkid 👙
+=======
+    @zlinkid   |   @FreeConfigZlinkbot
+>>>>>>> 3aa2fd0 (cahnge name upgrade to mci)
     """
 
     message_text = f"`{renamed_text}`\n\n{caption_text}"
