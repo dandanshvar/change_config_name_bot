@@ -905,11 +905,11 @@ async def handle_channel_post(
     if not results:
         return
 
-    caption_text = """
+    caption_text = " @zlinkid   |   @FreeConfigZlinkbot"
 
-    @zlinkid   |   @FreeConfigZlinkbot
-    """
-    message_text = f"`{renamed_text}`\n\n{caption_text}"
+   
+
+    message_text = f"{renamed_text}\n{caption_text}"
 
     await context.bot.send_message(
         chat_id=config.DEST_CHANNEL_ID,
