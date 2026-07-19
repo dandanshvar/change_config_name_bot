@@ -12,7 +12,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
-
+from telegram import MessageEntity
 import yaml  # PyYAML — used for Clash YAML handling
 
 from telegram import Document, InputFile, Message, Update
@@ -905,16 +905,31 @@ async def handle_channel_post(
     if not results:
         return
 
-    caption_text = """
+    
 
-    @zlinkid   |   @FreeConfigZlinkbot
-    """
-    message_text = f"`{renamed_text}`\n{caption_text}"
+    header = "✅ تست شده\n\n"
+
+    quote = (
+        "ALL-Networks\n\n"
+        f"{renamed_text}"
+    )
+
+    footer = "\n\nping 120ms\n@zlinkid"
+
+    text = header + quote + footer
+
+    entities = [
+        MessageEntity(
+            type="blockquote",
+            offset=len(header),
+            length=len(quote),
+        )
+    ]
 
     await context.bot.send_message(
         chat_id=config.DEST_CHANNEL_ID,
-        text=message_text,
-        parse_mode="Markdown"
+        text=text,
+        entities=entities,
     )
 # ── Entry point ───────────────────────────────────────────────────────────────
 
