@@ -907,25 +907,31 @@ async def handle_channel_post(
 
     
 
-    header = "✅ تست شده\n\n"
-
-    quote = (
-        "ALL-Networks\n\n"
-        f"{renamed_text}"
-    )
-
+    header = "trueVpnVps\n\n✅ تست شده\n\n"
+    
+    quote1 = "ALL-Networks"
+    
+    middle = "\n\n"
+    
+    quote2 = renamed_text
+    
     footer = "\n\nping 120ms\n@zlinkid"
-
-    text = header + quote + footer
-
+    
+    text = header + quote1 + middle + quote2 + footer
+    
     entities = [
         MessageEntity(
             type="blockquote",
             offset=len(header),
-            length=len(quote),
-        )
+            length=len(quote1),
+        ),
+        MessageEntity(
+            type="blockquote",
+            offset=len(header + quote1 + middle),
+            length=len(quote2),
+        ),
     ]
-
+    
     await context.bot.send_message(
         chat_id=config.DEST_CHANNEL_ID,
         text=text,
