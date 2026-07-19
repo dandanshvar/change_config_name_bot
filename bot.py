@@ -14,7 +14,7 @@ from enum import Enum
 from typing import Optional
 from telegram import MessageEntity
 import yaml  # PyYAML — used for Clash YAML handling
-
+from random import random
 from telegram import Document, InputFile, Message, Update
 from telegram.constants import ParseMode
 from telegram.ext import (
@@ -915,7 +915,7 @@ async def handle_channel_post(
 
     quote2 = renamed_text
 
-    footer = "\n\nping 120ms\n@zlinkid"
+    footer = f"\n\nping {round(random()*(200-90)+90 , 1)}\n@zlinkid"
 
     text = header + quote1 + middle + quote2 + footer
 
