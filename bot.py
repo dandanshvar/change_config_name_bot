@@ -12,7 +12,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
-from telegram import MessageEntity , 
+from telegram import MessageEntity 
 import yaml  # PyYAML — used for Clash YAML handling
 from random import random
 from telegram import Document, InputFile, Message, Update
