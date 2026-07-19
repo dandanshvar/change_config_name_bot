@@ -12,7 +12,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Optional
-from telegram import MessageEntity
+from telegram import MessageEntity , 
 import yaml  # PyYAML — used for Clash YAML handling
 from random import random
 from telegram import Document, InputFile, Message, Update
@@ -872,12 +872,9 @@ async def handle_channel_post(
 
     text = ""
 
-    # اگر متن باشد
     if message.text:
         text = message.text
 
-
-    # اگر فایل باشد
     elif message.document:
 
         tg_file = await message.document.get_file()
@@ -921,7 +918,7 @@ async def handle_channel_post(
 
     entities = [
         MessageEntity(
-            type="blockquote",
+            type="expandable_blockquote",
             offset=len(header),
             length=len(quote1),
         ),
